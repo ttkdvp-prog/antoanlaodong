@@ -262,10 +262,17 @@ function updateChecklistRow_(sheetName, ma, patch) {
   const values = sh.getDataRange().getValues();
   if (values.length < 14) throw new Error("Sheet has no checklist data");
   
-  // Tìm dòng có cột A = ma (bắt đầu từ dòng 14)
+  // Đọc headers từ dòng 13 (index 12) để tìm đúng vị trí cột
+  const headers = values[12].map(h => String(h).trim());
+  
+  // Tìm chỉ số cột "Mã" trong headers
+  const maColIndex = headers.findIndex(h => h === "Mã" || h === "Ma" || h === "MÃ");
+  if (maColIndex === -1) throw new Error("Không tìm thấy cột 'Mã' trong header dòng 13");
+  
+  // Tìm dòng có giá trị cột Mã = ma (bắt đầu từ dòng 14, index 13)
   let targetRowIndex = -1;
   for (let i = 13; i < values.length; i++) {
-    if (String(values[i][0]).trim() === String(ma).trim()) {
+    if (String(values[i][maColIndex]).trim() === String(ma).trim()) {
       targetRowIndex = i + 1; // 1-based index của sheet
       break;
     }
@@ -273,41 +280,52 @@ function updateChecklistRow_(sheetName, ma, patch) {
   
   if (targetRowIndex === -1) throw new Error("Checklist item code not found: " + ma);
   
-  // Cập nhật các cột chỉ định
-  // Cột I: Trạng thái (cột thứ 9)
-  if (patch.trangThai !== undefined) {
-    sh.getRange(targetRowIndex, 9).setValue(patch.trangThai);
+  // Hàm tiện ích: tìm số cột (1-based) theo tên header
+  function colOf(name) {
+    const names = Array.isArray(name) ? name : [name];
+    for (const n of names) {
+      const idx = headers.findIndex(h => h === n);
+      if (idx !== -1) return idx + 1; // 1-based
+    }
+    return -1;
   }
-  // Cột J: % HT (cột thứ 10)
-  if (patch.phanTramHt !== undefined) {
-    sh.getRange(targetRowIndex, 10).setValue(Number(patch.phanTramHt));
+  
+  // Cập nhật các cột theo tên header (linh hoạt với mọi cấu trúc sheet)
+  const colTrangThai   = colOf(["Trạng thái", "Trạng thái triển khai", "Trang thai"]);
+  const colPhanTramHt  = colOf(["% HT", "% Hoàn thành", "% hoan thanh", "Phan tram HT"]);
+  const colNgayHt      = colOf(["Ngày hoàn thành", "Ngay hoan thanh"]);
+  const colMinhChung   = colOf(["Minh chứng/Đường dẫn", "Minh chung", "Đường dẫn"]);
+  const colGhiChu      = colOf(["Tồn tại/Ghi chú", "Ghi chú", "Ghi chu", "Ton tai"]);
+  const colDiem        = colOf(["Điểm tự rà soát", "Diem tu ra soat", "Điểm rà soát"]);
+  
+  if (patch.trangThai !== undefined && colTrangThai > 0) {
+    sh.getRange(targetRowIndex, colTrangThai).setValue(patch.trangThai);
   }
-  // Cột K: Ngày hoàn thành (cột thứ 11)
-  if (patch.ngayHoanThanh !== undefined) {
+  if (patch.phanTramHt !== undefined && colPhanTramHt > 0) {
+    sh.getRange(targetRowIndex, colPhanTramHt).setValue(Number(patch.phanTramHt));
+  }
+  if (patch.ngayHoanThanh !== undefined && colNgayHt > 0) {
     if (patch.ngayHoanThanh) {
-      sh.getRange(targetRowIndex, 11).setValue(new Date(patch.ngayHoanThanh));
+      sh.getRange(targetRowIndex, colNgayHt).setValue(new Date(patch.ngayHoanThanh));
     } else {
-      sh.getRange(targetRowIndex, 11).clearContent();
+      sh.getRange(targetRowIndex, colNgayHt).clearContent();
     }
   }
-  // Cột L: Minh chứng/Đường dẫn (cột thứ 12)
-  if (patch.minhChung !== undefined) {
-    sh.getRange(targetRowIndex, 12).setValue(patch.minhChung);
+  if (patch.minhChung !== undefined && colMinhChung > 0) {
+    sh.getRange(targetRowIndex, colMinhChung).setValue(patch.minhChung);
   }
-  // Cột M: Tồn tại/Ghi chú (cột thứ 13)
-  if (patch.ghiChu !== undefined) {
-    sh.getRange(targetRowIndex, 13).setValue(patch.ghiChu);
+  if (patch.ghiChu !== undefined && colGhiChu > 0) {
+    sh.getRange(targetRowIndex, colGhiChu).setValue(patch.ghiChu);
   }
-  // Cột P: Điểm tự rà soát (cột thứ 16)
-  if (patch.diemTuRaSoat !== undefined) {
+  if (patch.diemTuRaSoat !== undefined && colDiem > 0) {
     if (patch.diemTuRaSoat === "" || patch.diemTuRaSoat === null) {
-      sh.getRange(targetRowIndex, 16).clearContent();
+      sh.getRange(targetRowIndex, colDiem).clearContent();
     } else {
-      sh.getRange(targetRowIndex, 16).setValue(Number(patch.diemTuRaSoat));
+      sh.getRange(targetRowIndex, colDiem).setValue(Number(patch.diemTuRaSoat));
     }
   }
   
-  // Trả về dữ liệu chi tiết của sheet sau khi cập nhật để đồng bộ client
-  SpreadsheetApp.flush(); // Đảm bảo các công thức được tính toán lại ngay
+  // Đảm bảo công thức được tính toán lại trước khi trả dữ liệu
+  SpreadsheetApp.flush();
   return getChecklist_(sheetName);
 }
