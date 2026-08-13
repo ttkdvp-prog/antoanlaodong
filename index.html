@@ -832,21 +832,27 @@
       const payload = { action, apiKey: CONFIG.key, ...params };
       let res;
       
+      // Google Apps Script Web App yêu cầu redirect:follow để xử lý 302 redirect
       if (method === "GET") {
         const queryParams = new URLSearchParams();
         Object.entries(payload).forEach(([k, v]) => {
           if (v != null) queryParams.set(k, typeof v === "object" ? JSON.stringify(v) : String(v));
         });
-        res = await fetch(CONFIG.url + "?" + queryParams.toString());
+        res = await fetch(CONFIG.url + "?" + queryParams.toString(), {
+          redirect: "follow",
+          mode: "cors"
+        });
       } else {
         res = await fetch(CONFIG.url, {
           method: "POST",
+          redirect: "follow",
+          mode: "cors",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         });
       }
       
-      if (!res.ok) throw new Error("HTTP connection failed with code " + res.status);
+      if (!res.ok) throw new Error("HTTP " + res.status + " - Kiểm tra lại URL và quyền truy cập Apps Script");
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || "API returned error");
       return json.data;
