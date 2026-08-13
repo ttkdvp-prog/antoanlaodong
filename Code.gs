@@ -325,7 +325,8 @@ function updateChecklistRow_(sheetName, ma, patch) {
     }
   }
   
-  // Đảm bảo công thức được tính toán lại trước khi trả dữ liệu
+  // Chỉ flush, KHÔNG gọi lại getChecklist_ (tiết kiệm 2-5 giây)
+  // Frontend sẽ cập nhật local state trực tiếp từ patch
   SpreadsheetApp.flush();
-  return getChecklist_(sheetName);
+  return { updated: true, ma: ma, patch: patch };
 }

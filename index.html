@@ -1498,31 +1498,47 @@
       };
       
       try {
-        setSyncStatus("loading", "Đang lưu thay đổi...");
+        setSyncStatus("loading", "Đang lưu...");
         
-        // Call API GET to update row (GET works better with CORS on Apps Script)
-        const data = await callAPI("updateChecklistRow", {
+        // Gọi API lưu lên Sheet
+        await callAPI("updateChecklistRow", {
           table: selectedUnitName,
           ma: itemMa,
           data: JSON.stringify(patch)
         }, "GET");
         
-        // Update local memory and re-render checklist list
-        APP_DATA.currentChecklist = data;
+        // ✅ Cập nhật local state NGAY LẬP TỨC (không cần re-fetch toàn bộ sheet)
+        // Tìm item trong mảng local và merge patch vào
+        if (APP_DATA.currentChecklist && APP_DATA.currentChecklist.items) {
+          const localItem = APP_DATA.currentChecklist.items.find(x => String(x["Mã"]).trim() === String(itemMa).trim());
+          if (localItem) {
+            // Map patch fields → tên cột thực tế trong sheet
+            if (patch.trangThai     !== undefined) localItem["Trạng thái"]            = patch.trangThai;
+            if (patch.phanTramHt    !== undefined) localItem["% HT"]                  = patch.phanTramHt;
+            if (patch.ngayHoanThanh !== undefined) localItem["Ngày hoàn thành"]       = patch.ngayHoanThanh || "";
+            if (patch.minhChung     !== undefined) localItem["Minh chứng/Đường dẫn"]  = patch.minhChung;
+            if (patch.ghiChu        !== undefined) localItem["Tồn tại/Ghi chú"]       = patch.ghiChu;
+            if (patch.diemTuRaSoat  !== undefined) localItem["Điểm tự rà soát"]       = patch.diemTuRaSoat;
+          }
+        }
+        
+        // Re-render danh sách checklist ngay (từ local state đã cập nhật)
         renderChecklistContent();
         
-        // Quietly refresh overview data in background to update charts
+        closeDrawer();
+        setSyncStatus("success", "Đã lưu");
+        showToast(`✅ Cập nhật thành công: ${itemMa}`, "success");
+        
+        // Cập nhật Overview charts trong nền (không chặn UI)
         silentPollOverview();
         
-        closeDrawer();
-        showToast(`Cập nhật thành công checklist ${itemMa}!`, "success");
       } catch (err) {
         showToast("Cập nhật lỗi: " + err.message, "error");
+        setSyncStatus("error", "Lỗi lưu");
       } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i><span>Lưu thông tin lên Google Sheet</span>`;
         lucide.createIcons();
-        setSyncStatus("success", "Đã đồng bộ");
       }
     }
 
