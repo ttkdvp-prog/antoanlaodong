@@ -249,6 +249,11 @@ function updateChecklistRow_(sheetName, ma, patch) {
   if (!ma) throw new Error("Missing item code (Mã)");
   if (!patch) throw new Error("Missing patch data");
   
+  // Nếu patch là string JSON (gửi qua GET query param), parse thành object
+  if (typeof patch === "string") {
+    try { patch = JSON.parse(patch); } catch(e) { throw new Error("Invalid patch data JSON: " + e.message); }
+  }
+  
   const ss = ss_();
   const sh = ss.getSheetByName(sheetName);
   if (!sh) throw new Error("Sheet not found: " + sheetName);

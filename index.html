@@ -1447,12 +1447,12 @@
       try {
         setSyncStatus("loading", "Đang lưu thay đổi...");
         
-        // Call API POST to update row
+        // Call API GET to update row (GET works better with CORS on Apps Script)
         const data = await callAPI("updateChecklistRow", {
           table: selectedUnitName,
           ma: currentEditingItem["Mã"],
-          data: patch
-        }, "POST");
+          data: JSON.stringify(patch)
+        }, "GET");
         
         // Update local memory and re-render checklist list
         APP_DATA.currentChecklist = data;
