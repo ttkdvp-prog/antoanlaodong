@@ -1190,7 +1190,7 @@
       document.getElementById("unit-stat-readiness-bar").style.width = readinessPct;
       
       document.getElementById("unit-stat-completed").textContent = `${metadata.hoanThanh} / ${metadata.tongViec}`;
-      document.getElementById("unit-stat-5s").textContent = fmtPercent(metadata.5sHoanThanh);
+      document.getElementById("unit-stat-5s").textContent = fmtPercent(metadata.hoanThanh5s);
       document.getElementById("unit-stat-5s-rating").textContent = metadata.xepLoai5s || "Yếu";
       document.getElementById("unit-stat-hoso").textContent = Number(metadata.hoSoScore || 0);
       document.getElementById("unit-stat-hientruong").textContent = Number(metadata.hienTruongScore || 0);
