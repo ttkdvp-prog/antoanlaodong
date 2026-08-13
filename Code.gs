@@ -206,7 +206,7 @@ function getChecklist_(sheetName) {
     chuaThucHien: sh.getRange("I7").getValue(),
     quaHan: sh.getRange("I8").getValue(),
     tyLeSanSang: sh.getRange("I9").getValue(),
-    5sHoanThanh: sh.getRange("L3").getValue(),
+    hoanThanh5s: sh.getRange("L3").getValue(),
     xepLoai5s: sh.getRange("L4").getValue(),
     hienTruongScore: sh.getRange("L5").getValue(),
     hoSoScore: sh.getRange("L6").getValue(),
