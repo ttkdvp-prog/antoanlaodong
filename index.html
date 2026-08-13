@@ -1441,15 +1441,17 @@
     }
 
     function updatePercentLabel(val) {
-      document.getElementById("edit-percent").value = val;
-      document.getElementById("edit-percent-num").value = val;
-      document.getElementById("edit-percent-label").textContent = val + "%";
+      const num = Math.min(100, Math.max(0, Number(val) || 0));
+      document.getElementById("edit-percent").value = num;
+      document.getElementById("edit-percent-num").value = num;
+      document.getElementById("edit-percent-label").textContent = num + "%";
     }
     
     function updatePercentRange(val) {
       let num = Math.min(100, Math.max(0, Number(val)));
       if (isNaN(num)) num = 0;
       document.getElementById("edit-percent").value = num;
+      document.getElementById("edit-percent-num").value = num;
       document.getElementById("edit-percent-label").textContent = num + "%";
     }
 
@@ -1457,15 +1459,17 @@
       const status = document.getElementById("edit-status").value;
       if (status === "Hoàn thành") {
         updatePercentLabel(100);
-        // Autofill today date if empty
+        // Tự động điền ngày hôm nay nếu chưa có
         if (!document.getElementById("edit-completedate").value) {
           document.getElementById("edit-completedate").value = new Date().toISOString().split("T")[0];
         }
       } else if (status === "Chưa thực hiện" || status === "Không áp dụng") {
         updatePercentLabel(0);
         document.getElementById("edit-completedate").value = "";
-      } else if (status === "Đang thực hiện" && document.getElementById("edit-percent").value == 100) {
+      } else if (status === "Đang thực hiện" && Number(document.getElementById("edit-percent").value) >= 100) {
         updatePercentLabel(50);
+      } else if (status === "Có dự thảo-Chờ ký" && Number(document.getElementById("edit-percent").value) === 0) {
+        updatePercentLabel(80);
       }
     }
 
