@@ -1,0 +1,25 @@
+# Bỏ qua các file tạm và dữ liệu
+*.xlsx
+*.docx
+*.txt
+node_modules/
+.env
+.env.local
+
+# Các file phân tích không cần deploy
+excel_schema.json
+cell_coords.txt
+checklist_rows.txt
+nhan_su_rows.txt
+rows_details.txt
+nhan_su_details.txt
+trung_tam_details.txt
+sheet_names.txt
+
+# Dashboard expert folder (internal)
+dashboard-sheets-expert/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
