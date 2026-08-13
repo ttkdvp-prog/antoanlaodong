@@ -280,53 +280,42 @@ function updateChecklistRow_(sheetName, ma, patch) {
   
   if (targetRowIndex === -1) throw new Error("Checklist item code not found: " + ma);
   
-  // Hàm tiện ích: tìm số cột (1-based) theo tên header
-  function colOf(name) {
-    const names = Array.isArray(name) ? name : [name];
-    for (const n of names) {
-      const idx = headers.findIndex(h => h === n);
-      if (idx !== -1) return idx + 1; // 1-based
+  // Hàm tiện ích: tìm chỉ số cột 0-based theo tên header
+  function idxOf(names) {
+    const arr = Array.isArray(names) ? names : [names];
+    for (const n of arr) {
+      const i = headers.findIndex(h => h === n);
+      if (i !== -1) return i;
     }
     return -1;
   }
   
-  // Cập nhật các cột theo tên header (linh hoạt với mọi cấu trúc sheet)
-  const colTrangThai   = colOf(["Trạng thái", "Trạng thái triển khai", "Trang thai"]);
-  const colPhanTramHt  = colOf(["% HT", "% Hoàn thành", "% hoan thanh", "Phan tram HT"]);
-  const colNgayHt      = colOf(["Ngày hoàn thành", "Ngay hoan thanh"]);
-  const colMinhChung   = colOf(["Minh chứng/Đường dẫn", "Minh chung", "Đường dẫn"]);
-  const colGhiChu      = colOf(["Tồn tại/Ghi chú", "Ghi chú", "Ghi chu", "Ton tai"]);
-  const colDiem        = colOf(["Điểm tự rà soát", "Diem tu ra soat", "Điểm rà soát"]);
+  // Đọc hàng mục tiêu 1 lần (1 API call)
+  const lastCol = headers.length;
+  const targetRange = sh.getRange(targetRowIndex, 1, 1, lastCol);
+  const rowVals = targetRange.getValues()[0]; // mảng giá trị hàng
   
-  if (patch.trangThai !== undefined && colTrangThai > 0) {
-    sh.getRange(targetRowIndex, colTrangThai).setValue(patch.trangThai);
+  // Chỉnh sửa trong bộ nhớ (0 API call)
+  const iStatus  = idxOf(["Trạng thái", "Trạng thái triển khai", "Trang thai"]);
+  const iPct     = idxOf(["% HT", "% Hoàn thành", "% hoan thanh"]);
+  const iDate    = idxOf(["Ngày hoàn thành", "Ngay hoan thanh"]);
+  const iProof   = idxOf(["Minh chứng/Đường dẫn", "Minh chung", "Đường dẫn"]);
+  const iNote    = idxOf(["Tồn tại/Ghi chú", "Ghi chú", "Ghi chu", "Ton tai"]);
+  const iScore   = idxOf(["Điểm tự rà soát", "Diem tu ra soat", "Điểm rà soát"]);
+  
+  if (patch.trangThai     !== undefined && iStatus >= 0) rowVals[iStatus] = patch.trangThai;
+  if (patch.phanTramHt    !== undefined && iPct    >= 0) rowVals[iPct]    = Number(patch.phanTramHt);
+  if (patch.ngayHoanThanh !== undefined && iDate   >= 0) {
+    rowVals[iDate] = patch.ngayHoanThanh ? new Date(patch.ngayHoanThanh) : "";
   }
-  if (patch.phanTramHt !== undefined && colPhanTramHt > 0) {
-    sh.getRange(targetRowIndex, colPhanTramHt).setValue(Number(patch.phanTramHt));
-  }
-  if (patch.ngayHoanThanh !== undefined && colNgayHt > 0) {
-    if (patch.ngayHoanThanh) {
-      sh.getRange(targetRowIndex, colNgayHt).setValue(new Date(patch.ngayHoanThanh));
-    } else {
-      sh.getRange(targetRowIndex, colNgayHt).clearContent();
-    }
-  }
-  if (patch.minhChung !== undefined && colMinhChung > 0) {
-    sh.getRange(targetRowIndex, colMinhChung).setValue(patch.minhChung);
-  }
-  if (patch.ghiChu !== undefined && colGhiChu > 0) {
-    sh.getRange(targetRowIndex, colGhiChu).setValue(patch.ghiChu);
-  }
-  if (patch.diemTuRaSoat !== undefined && colDiem > 0) {
-    if (patch.diemTuRaSoat === "" || patch.diemTuRaSoat === null) {
-      sh.getRange(targetRowIndex, colDiem).clearContent();
-    } else {
-      sh.getRange(targetRowIndex, colDiem).setValue(Number(patch.diemTuRaSoat));
-    }
+  if (patch.minhChung     !== undefined && iProof  >= 0) rowVals[iProof]  = patch.minhChung;
+  if (patch.ghiChu        !== undefined && iNote   >= 0) rowVals[iNote]   = patch.ghiChu;
+  if (patch.diemTuRaSoat  !== undefined && iScore  >= 0) {
+    rowVals[iScore] = (patch.diemTuRaSoat === "" || patch.diemTuRaSoat === null) ? "" : Number(patch.diemTuRaSoat);
   }
   
-  // Chỉ flush, KHÔNG gọi lại getChecklist_ (tiết kiệm 2-5 giây)
-  // Frontend sẽ cập nhật local state trực tiếp từ patch
-  SpreadsheetApp.flush();
+  // Ghi lại toàn bộ hàng 1 lần (1 API call - nhanh nhất có thể)
+  targetRange.setValues([rowVals]);
+  
   return { updated: true, ma: ma, patch: patch };
 }
