@@ -1474,6 +1474,9 @@
       e.preventDefault();
       if (!currentEditingItem) return;
       
+      // Lưu mã trước khi có thể bị reset
+      const itemMa = currentEditingItem["Mã"];
+      
       const saveBtn = document.getElementById("drawer-save-btn");
       saveBtn.disabled = true;
       saveBtn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4 animate-spin"></i><span>Đang cập nhật lên Sheet...</span>`;
@@ -1496,7 +1499,7 @@
         // Call API GET to update row (GET works better with CORS on Apps Script)
         const data = await callAPI("updateChecklistRow", {
           table: selectedUnitName,
-          ma: currentEditingItem["Mã"],
+          ma: itemMa,
           data: JSON.stringify(patch)
         }, "GET");
         
@@ -1508,7 +1511,7 @@
         silentPollOverview();
         
         closeDrawer();
-        showToast(`Cập nhật thành công checklist ${currentEditingItem["Mã"]}!`, "success");
+        showToast(`Cập nhật thành công checklist ${itemMa}!`, "success");
       } catch (err) {
         showToast("Cập nhật lỗi: " + err.message, "error");
       } finally {
