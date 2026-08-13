@@ -822,40 +822,41 @@
       refreshData();
     }
 
-    // Fetch and Sync API Wrapper
-    async function callAPI(action, params = {}, method = "GET") {
+    // Fetch and Sync API Wrapper - optimized for Google Apps Script
+    async function callAPI(action, params = {}, _method = "GET", retryCount = 1) {
       if (!CONFIG.url || !CONFIG.key) {
         showToast("Vui lòng cấu hình kết nối API trước!", "error");
         throw new Error("Missing connection parameters");
       }
-      
       const payload = { action, apiKey: CONFIG.key, ...params };
-      let res;
-      
-      // Google Apps Script Web App yêu cầu redirect:follow để xử lý 302 redirect
-      if (method === "GET") {
-        const queryParams = new URLSearchParams();
-        Object.entries(payload).forEach(([k, v]) => {
-          if (v != null) queryParams.set(k, typeof v === "object" ? JSON.stringify(v) : String(v));
-        });
-        res = await fetch(CONFIG.url + "?" + queryParams.toString(), {
+      const queryParams = new URLSearchParams();
+      Object.entries(payload).forEach(([k, v]) => {
+        if (v != null) queryParams.set(k, typeof v === "object" ? JSON.stringify(v) : String(v));
+      });
+      // AbortController để timeout 25 giây
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      try {
+        // Apps Script: chỉ dùng GET + redirect:follow, KHÔNG mode:'cors' (gây lỗi)
+        const res = await fetch(CONFIG.url + "?" + queryParams.toString(), {
           redirect: "follow",
-          mode: "cors"
+          signal: controller.signal
         });
-      } else {
-        res = await fetch(CONFIG.url, {
-          method: "POST",
-          redirect: "follow",
-          mode: "cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error("HTTP " + res.status + " - Kiểm tra URL và quyền truy cập Apps Script");
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || "API returned error");
+        return json.data;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        // Tự động thử lại 1 lần nếu lỗi mạng tạm thời
+        if (retryCount > 0 && err.name !== "Error") {
+          await new Promise(r => setTimeout(r, 2000));
+          return callAPI(action, params, _method, retryCount - 1);
+        }
+        if (err.name === "AbortError") throw new Error("Quá thời gian (25s) - Apps Script đang bận hoặc mạng chậm");
+        throw err;
       }
-      
-      if (!res.ok) throw new Error("HTTP " + res.status + " - Kiểm tra lại URL và quyền truy cập Apps Script");
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "API returned error");
-      return json.data;
     }
 
     // Refresh Data trigger

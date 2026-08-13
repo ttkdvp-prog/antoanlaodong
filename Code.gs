@@ -195,27 +195,28 @@ function getChecklist_(sheetName) {
     return { metadata: {}, items: [] };
   }
   
-  // Đọc metadata (dòng 1-12)
+  // Đọc metadata từ mảng values[] đã load (nhanh hơn nhiều so với getRange().getValue())
+  // B3=values[2][1], E3=values[2][4], I3=values[2][8], L3=values[2][11]...
   const metadata = {
-    donVi: sh.getRange("B3").getValue(),
-    chuTri: sh.getRange("E3").getValue(),
-    tongViec: sh.getRange("I3").getValue(),
-    hoanThanh: sh.getRange("I4").getValue(),
-    coDuThao: sh.getRange("I5").getValue(),
-    dangThucHien: sh.getRange("I6").getValue(),
-    chuaThucHien: sh.getRange("I7").getValue(),
-    quaHan: sh.getRange("I8").getValue(),
-    tyLeSanSang: sh.getRange("I9").getValue(),
-    hoanThanh5s: sh.getRange("L3").getValue(),
-    xepLoai5s: sh.getRange("L4").getValue(),
-    hienTruongScore: sh.getRange("L5").getValue(),
-    hoSoScore: sh.getRange("L6").getValue(),
-    canhBao: sh.getRange("L7").getValue(),
-    ngayKiemTraDau: defFormatDate(sh.getRange("B4").getValue()),
-    hanTuRaSoat: defFormatDate(sh.getRange("E4").getValue()),
-    hanKhoaChecklist: defFormatDate(sh.getRange("B5").getValue()),
-    luuY: sh.getRange("E5").getValue(),
-    dieuPhoiVien: sh.getRange("L10").getValue()
+    donVi:            values[2][1],
+    chuTri:           values[2][4],
+    tongViec:         values[2][8],
+    hoanThanh:        values[3][8],
+    coDuThao:         values[4][8],
+    dangThucHien:     values[5][8],
+    chuaThucHien:     values[6][8],
+    quaHan:           values[7][8],
+    tyLeSanSang:      values[8][8],
+    hoanThanh5s:      values[2][11],
+    xepLoai5s:        values[3][11],
+    hienTruongScore:  values[4][11],
+    hoSoScore:        values[5][11],
+    canhBao:          values[6][11],
+    ngayKiemTraDau:   defFormatDate(values[3][1]),
+    hanTuRaSoat:      defFormatDate(values[3][4]),
+    hanKhoaChecklist: defFormatDate(values[4][1]),
+    luuY:             values[4][4],
+    dieuPhoiVien:     values[9][11]
   };
   
   // Đọc bảng checklist (Bắt đầu từ dòng 14, header ở dòng 13)
